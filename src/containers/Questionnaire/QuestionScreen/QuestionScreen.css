@@ -1,0 +1,9 @@
+.q_field {
+  min-height: 180px;
+  background-color: aliceblue;
+  border-radius: 20px;
+  text-align: center;
+  color: #6631cc;
+  font-weight: 600;
+  padding-top: 120px;
+}
