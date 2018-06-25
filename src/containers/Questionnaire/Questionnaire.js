@@ -2,9 +2,10 @@ import React, { Component } from 'react';
 import axios from 'axios'
 import classes from '../../../node_modules/bootstrap/dist/css/bootstrap.min.css'
 
-import Aux from '../../hoc/Auxiliary'
 import QuestionScreen from './QuestionScreen/QuestionScreen'
 import AnswerButton from './AnswerButton/AnswerButton'
+import ScoreScreen from './ScoreDisplay/ScoreDisplay'
+import QuestionCounter from './QuestionCounter/QuestionCounter'
 
 class Questionnaire extends Component {
   state = {
@@ -12,11 +13,11 @@ class Questionnaire extends Component {
     questionnaire:    {},
     questionCount:    null,
     score:            null,
-    totalScore:       null,
     rightAnswers:     null,
     //===Error Handling===//
     loading:          true,
-    error:            ''
+    error:            '',
+    gameOver:         false
   }
 
   loadData = () => {
@@ -54,40 +55,62 @@ class Questionnaire extends Component {
   }
 
   stringParser = (str) => {
-    return str = str.replace(/&quot;/g,'"').replace(/&#039;/g,'\'')
+    return str = str.replace(/&quot;/g,'"').replace(/&#039;/g,'\'').replace(/&amp;/g,'&').replace(/&#039;/g,'`')
   }
   
-  componentDidMount() {
+  componentDidMount() { 
     this.loadData()
   }
 
+  gameEndCheck = () => {
+    const { currentQuestion, questionCount } = this.state
+
+    if (currentQuestion === questionCount - 1) {
+      this.setState({ gameOver: true })
+    }
+  }
+
   answerCheck = (e) => {
+    this.gameEndCheck()
     let corAnswer = this.state.questionnaire[this.state.currentQuestion].correct_answer
     let answer = e.target.value
+    
     if (answer === corAnswer) {
-      console.log("i'm in true");
       this.setState(prevState => ({
         score:            prevState.score + 10,
         totalScore:       prevState.totalScore + this.state.score,
         rightAnswers:     prevState.rightAnswers + 1,
-        currentQuestion:  prevState.currentQuestion + 1
-      }))
-      } else {
-        console.log("i'm in false");
-        this.setState(prevState => ({
-          currentQuestion:  prevState.currentQuestion + 1
-        }))
+        }), () => {
+          setTimeout(() => {
+            this.setState(prevState => ({
+              currentQuestion:  prevState.currentQuestion + 1
+              }))
+          }, 1)
+        })
+      } 
+      
+      if (answer !== corAnswer) {
+        setTimeout(() => {
+          this.setState(prevState => ({
+            currentQuestion:  prevState.currentQuestion + 1
+            }))
+        }, 1)
       }
   }
 
   errorHandler = () => {
-    const { questionnaire, questionCount, currentQuestion, loading, error } = this.state
+    const { questionnaire, questionCount, score, rightAnswers, currentQuestion, loading, error, gameOver } = this.state
+    console.log(score);
     
     if (loading) {
       return <div>Loading ...</div>
     }
     if (error) {
       return <div>The was an error loading the data</div>
+    }
+
+    if (gameOver) {
+      return <QuestionScreen question={ `You scored ${score} points by answering ${rightAnswers} questions correctly` } />
     }
     return (
       <div className={classes['col-md-6']}>
@@ -96,6 +119,11 @@ class Questionnaire extends Component {
         <AnswerButton 
           answers={ questionnaire[currentQuestion].all_answers }
           clicked={ this.answerCheck } />
+        <ScoreScreen score={ score } />
+        <QuestionCounter 
+          currentQuestion={ currentQuestion + 1 }
+          totalQuestions={ questionCount } />
+
       </div>
     );
   }
